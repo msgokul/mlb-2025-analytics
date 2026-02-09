@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 MLB_DATA_DIR_PATH = os.path.join(os.path.dirname(__file__), 'MLB_DATA_2025')
 
-
 # Function to get the locations of the CSV files for each game
 def get_csv_locations():
 
@@ -93,14 +92,116 @@ def process_linescores(linescore_map):
             # Sort by inning and half to ensure correct order
             linescores_df = linescores_df.sort_values(by=['inning', 'half'], ascending=[True, True])
 
-            # Calculating batting team score
-            linescores_df['cummulative_score'] = linescores_df.groupby('battingteamid')['runs'].cumsum()
-            # Ensuring that only the runs scored before the current half-inning are counted for the batting team score
-            linescores_df['batting_team_score'] = linescores_df.groupby('battingteamid')['cummulative_score'].shift(1).fillna(0).astype(int)
+            teams = linescores_df['battingteamid'].unique()
+            if len(teams) != 2:
+                logger.warning(f"Unexpected number of teams in linescores for game with gamePk {gamepk}. Expected 2 teams, found {len(teams)}. Skipping this game.")
+                continue
+            else:
+                scores = []
+                scores_diff = []
 
+                team_scores = {t:0 for t in teams}
+
+                for _, row in linescores_df.iterrows():
+                    batting_team = row['battingteamid']
+                    current_batting_score = team_scores[batting_team]
+
+                    fielder = [t for t in teams if t!=batting_team]
+                    current_fielding_score = team_scores[fielder[0]] if fielder else 0
+
+                    scores.append(current_batting_score)
+                    scores_diff.append(current_batting_score - current_fielding_score)
+
+                    team_scores[batting_team] += row['runs']
+
+                linescores_df['battingteam_score'] = scores
+                linescores_df['battingteam_score_diff'] = scores_diff
+
+                all_linescores_list.append(linescores_df)
+             
         except Exception as e:
             logger.error(f"Error processing linescores for game with gamePk {gamepk}: {e}")
+    
+    
+    if all_linescores_list:
+        final_linescores_df = pd.concat(all_linescores_list, ignore_index=True)
+        final_linescores_df.columns = [col.lower() for col in final_linescores_df.columns]
+        logger.info(f"Total number of linescore entries processed: {len(final_linescores_df)}")
+
+def process_runners(runners_map):
+    logger.info("Processing runners files...")
+
+    all_runners_list = []
+    for gamepk, paths in runners_map.items():
+        try:
+            runners_df = pd.read_csv(paths['runners_csv'])
+            if runners_df.empty:
+                continue
+
+            runners_df = runners_df[runners_df['gamePk'] == gamepk].copy()
+
+            def normalize_base(val):
+                if pd.isna(val) or val == '': return 'B'
+                if '1' in str(val): return '1B'
+                if '2' in str(val): return '2B'
+                if '3' in str(val): return '3B'
+                if 'score' in str(val).lower() or 'home' in str(val).lower(): return 'HM'
+                return str(val)
             
+            if 'originBase' in runners_df.columns:
+                runners_df['startbase'] = runners_df['originBase'].apply(normalize_base)
+            if 'start' in runners_df.columns:
+                runners_df['startbase'] = runners_df['start'].apply(normalize_base)
+            if 'end' in runners_df.columns:
+                runners_df['endbase'] = runners_df['end'].apply(normalize_base)
+            runners_df['reachedbase'] = runners_df['endbase']
+
+            runners_df['is_risp'] = runners_df['startbase'].isin(['2B', '3B'])
+            
+            is_hr = runners_df['event'].str.lower().str.contains('home run|homerun',  na=False)
+
+            runners_df['is_firsttothird'] = (
+                                            (runners_df['startbase'] == '1B')
+                                            & (runners_df['endbase'] == '3B')
+                                              & (~is_hr)
+                                            )
+            
+            runners_df['is_secondtohome'] = (
+                                            (runners_df['startbase'] == '2B')
+                                            & (runners_df['endbase'] == 'HM')
+                                              & (~is_hr)
+                                            )
+            
+            col_map = {
+                'gamePk': 'gamepk',
+                'atBatIndex': 'atbatindex',
+                'playIndex': 'playindex',
+                'runnerid': 'runnerid',
+                'playId': 'playid',
+                'runnerfullName': 'runnerfullname',
+                'isOut':'is_out', 
+                'event':'eventtype', 
+                'movementReason':'movementreason',
+            }
+
+            runners_df = runners_df.rename(columns=col_map)
+
+            cols_to_keep = ['gamepk', 'atbatindex', 'playindex', 
+                            'runnerid', 'playid', 'runnerfullname', 
+                            'is_out', 'eventtype', 'movementreason', 
+                            'startbase', 'endbase', 'reachedbase', 
+                            'is_risp', 'is_firsttothird', 'is_secondtohome']
+            
+            df = runners_df[cols_to_keep]
+            all_runners_list.append(df)
+
+        except Exception as e:
+            logger.error(f"Error processing runners for game with gamePk {gamepk}: {e}")
+
+    if all_runners_list:
+        final_runners_df = pd.concat(all_runners_list, ignore_index=True)
+        final_runners_df.columns = [col.lower() for col in final_runners_df.columns]
+        logger.info(f"Total number of runner entries processed: {len(final_runners_df)}")
 
 def main():
 
