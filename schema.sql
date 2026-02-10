@@ -12,14 +12,14 @@ CREATE TABLE game (
     officialdate DATE NOT NULL, 
     sportid INT NOT NULL,
     gametype VARCHAR(1) NOT NULL, 
-    codedgamestate VARCHAR(10) NOT NULL;
-    detailedstate VARCHAR(50) NOT NULL;
+    codedgamestate VARCHAR(10) NOT NULL,
+    detailedstate VARCHAR(50) NOT NULL,
     awayteamid INT NOT NULL,
     awayteamname VARCHAR(100) NOT NULL,
-    awayteamscore INT NOT NULL,
+    awayteamscore INT ,
     hometeamid INT NOT NULL,
     hometeamname VARCHAR(100) NOT NULL,
-    hometeamscore INT NOT NULL,
+    hometeamscore INT,
     venueid INT NOT NULL,
     venuename VARCHAR(100) NOT NULL,
     scheduledinnings INT NOT NULL
@@ -37,7 +37,7 @@ CREATE TABLE linescore (
     errors INT, 
     leftonbase INT,
     battingteam_score INT NOT NULL, 
-    batting_score_diff INT NOT NULL, 
+    battingteam_score_diff INT NOT NULL, 
     PRIMARY KEY (gamepk, inning, half)
 );
 
@@ -52,11 +52,11 @@ CREATE TABLE runner_play (
     startbase VARCHAR(2) NOT NULL, 
     endbase VARCHAR(2) NOT NULL,
     reachedbase VARCHAR(2) NOT NULL,
-    is_out BOOLEAN NOT NULL,
+    is_out BOOLEAN,
     eventtype VARCHAR(50) NOT NULL,
-    movementreason VARCHAR(50) NOT NULL,
+    movementreason VARCHAR(50),
     is_risp BOOLEAN NOT NULL,
-    is_firsttosecond BOOLEAN NOT NULL,
+    is_firsttothird BOOLEAN NOT NULL,
     is_secondtohome BOOLEAN NOT NULL,
     PRIMARY KEY (gamepk, atbatindex, playindex, runnerid)
 );

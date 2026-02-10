@@ -1,14 +1,30 @@
 import os
 import glob
-import sys
 import pandas as pd
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
 import logging
 
-#configuring logging
+# Configuring logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Confiigurations
 MLB_DATA_DIR_PATH = os.path.join(os.path.dirname(__file__), 'MLB_DATA_2025')
+DB_URL = os.getenv('DATABASE_URL')
+
+def create_db_engine():
+    try:
+        if not DB_URL:
+            logger.error("DATABASE_URL not found in environment variables. Please set it in the .env file.")
+            exit(1)
+        return create_engine(DB_URL)
+    except Exception as e:
+        logger.error(f"Error creating database engine: {e}")
+        exit(1)
 
 # Function to get the locations of the CSV files for each game
 def get_csv_locations():
@@ -49,13 +65,12 @@ def get_csv_locations():
     
     except Exception as e:
         logger.error(f"Error in get_csv_locations: {e}")
-        sys.exit(1)
-
+        exit(1)
     logger.info(f"Total number of unique games across the 2025 season found: {len(location_map)}")
     return location_map
 
 
-def process_games(game_map):
+def process_games(game_map, engine):
     logger.info("Processing games files...")
 
     all_games_list = []
@@ -75,10 +90,12 @@ def process_games(game_map):
 
     if all_games_list:
         final_games_df = pd.concat(all_games_list, ignore_index=True)
+        final_games_df.columns = [col.lower() for col in final_games_df.columns]
+        final_games_df.to_sql('game', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of games processed: {len(final_games_df)}")
 
 
-def process_linescores(linescore_map):
+def process_linescores(linescore_map, engine):
     logger.info("Processing linescores files...")
 
     all_linescores_list = []
@@ -126,9 +143,10 @@ def process_linescores(linescore_map):
     if all_linescores_list:
         final_linescores_df = pd.concat(all_linescores_list, ignore_index=True)
         final_linescores_df.columns = [col.lower() for col in final_linescores_df.columns]
+        final_linescores_df.to_sql('linescore', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of linescore entries processed: {len(final_linescores_df)}")
 
-def process_runners(runners_map):
+def process_runners(runners_map, engine):
     logger.info("Processing runners files...")
 
     all_runners_list = []
@@ -187,9 +205,9 @@ def process_runners(runners_map):
             runners_df = runners_df.rename(columns=col_map)
 
             cols_to_keep = ['gamepk', 'atbatindex', 'playindex', 
-                            'runnerid', 'playid', 'runnerfullname', 
-                            'is_out', 'eventtype', 'movementreason', 
+                            'runnerid', 'playid', 'runnerfullname',                              
                             'startbase', 'endbase', 'reachedbase', 
+                            'is_out', 'eventtype', 'movementreason',
                             'is_risp', 'is_firsttothird', 'is_secondtohome']
             
             df = runners_df[cols_to_keep]
@@ -200,19 +218,35 @@ def process_runners(runners_map):
 
     if all_runners_list:
         final_runners_df = pd.concat(all_runners_list, ignore_index=True)
+        final_runners_df.drop_duplicates(
+            subset=['gamepk', 'atbatindex', 'playindex', 'runnerid'],
+            keep='last', 
+            inplace=True
+        )
         final_runners_df.columns = [col.lower() for col in final_runners_df.columns]
+        final_runners_df.to_sql('runner_play', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of runner entries processed: {len(final_runners_df)}")
 
 def main():
+    engine = create_db_engine()
 
-    mapped_csv_location = get_csv_locations()
+    # Check db connection
+    try:
+        with engine.connect() as connection:
+            logger.info("Successfully connected to the database.")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        return
+    
+    csv_location_map = get_csv_locations()
 
-    if not mapped_csv_location:
+    if not csv_location_map:
         logger.error("No valid game CSV locations found. Exiting.")
         return
 
-    process_games(mapped_csv_location)
-    process_linescores(mapped_csv_location)
+    process_games(csv_location_map, engine)
+    process_linescores(csv_location_map, engine)
+    process_runners(csv_location_map, engine)
     
 if __name__ == "__main__":
     main()
