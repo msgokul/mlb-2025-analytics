@@ -9,9 +9,9 @@ This project implements a complete Extraction, Transformation and Loading (ETL) 
 mlb-2025-analytics/
 |-- MLB_DATA_2025
 |-- .env                    #Database configurations
-|-- queries.sql             **#Part 1: Database Schema Definitions (SQL).**
-|-- etl_pipelines.py        **#Part 2: Main Transform and Load Orchestration Script (Python).**
-|-- schema.sql              **#Part 3: Analytical SQL Queries (SQL).**
+|-- queries.sql             Part 3: Database Schema Definitions (SQL).
+|-- etl_pipelines.py        Part 2: Main Transform and Load Orchestration Script (Python).
+|-- schema.sql              Part 1: Analytical SQL Queries (SQL).
 |-- README.md               
 |-- requirements.txt
 |-- .gitignore
@@ -161,5 +161,30 @@ psql -U <user> -d <your db> -f queries.sql
 (5 rows)
 ```
 
+### 3f. Write a query that identifies the most aggressive baserunners and explain your reasoning
 
+**Answer**
+```
 
+ runnerid |  runnerfullname   | aggressive_run_percentage | stolen_base_success_rate | extra_bases_on_singles_percentage | extra_bases_on_doubles_percentage
+----------+-------------------+---------------------------+--------------------------+-----------------------------------+-----------------------------------
+   693459 | Kyler Fedko       |                    0.1667 |                          |                            0.1667 |                            0.0000
+   690985 | Colby Halter      |                    0.1538 |                   1.0000 |                            0.0769 |                            0.0000
+   806964 | Sebastian Walcott |                    0.1333 |                          |                            0.0667 |                            0.0000
+   683006 | Chris Newell      |                    0.1250 |                   1.0000 |                            0.0000 |                            0.0000
+   640459 | Brian Navarreto   |                    0.0952 |                          |                            0.0476 |                            0.0000
+   695603 | Benny Montgomery  |                    0.0952 |                   1.0000 |                            0.0952 |                            0.0000
+   624523 | Riley Unroe       |                    0.0952 |                   1.0000 |                            0.0476 |                            0.0000
+   802355 | Tanner Schobel    |                    0.0909 |                          |                            0.0909 |                            0.0000
+   680709 | Nick Dunn         |                    0.0909 |                          |                            0.0000 |                            0.0000
+   803475 | Colby Jones       |                    0.0909 |                          |                            0.0000 |                            0.0000
+(10 rows)
+
+```
+### Reason:
+For measuring aggressive base running, I chose to track:
+1. **Aggressive_Run_Percentage**: How often the runners advances from 1st base to 3rd base, or from 2nd to Home
+2. **stolen_base_success_rate**: How effectively a runner steals a base successfully relative to the number of total attempts taken.
+3. **extra_bases_percentage**: How frequently a runner takes extra bases on Singles and Doubles .
+
+These key metrics provide an idea on how the runners are trying to be more aggressive to reach more bases than possible or to score runs faster than playing normal.

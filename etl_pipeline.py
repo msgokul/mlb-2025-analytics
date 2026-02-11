@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Confiigurations
-MLB_DATA_DIR_PATH = os.path.join(os.path.dirname(__file__), 'MLB_DATA_2025')
+MLB_DATA_DIR_PATH = os.path.join(os.path.dirname(__file__), 'MLB_Data_2025')
 DB_URL = os.getenv('DATABASE_URL')
 
 def create_db_engine():
@@ -91,7 +91,7 @@ def process_games(game_map, engine):
     if all_games_list:
         final_games_df = pd.concat(all_games_list, ignore_index=True)
         final_games_df.columns = [col.lower() for col in final_games_df.columns]
-        final_games_df.to_sql('game', engine, if_exists='append', index=False, chunksize=1000)
+        final_games_df.to_sql('game', engine, if_exists='replace', index=False, chunksize=1000)
         logger.info(f"Total number of games processed: {len(final_games_df)}")
 
 
@@ -119,6 +119,7 @@ def process_linescores(linescore_map, engine):
 
                 team_scores = {t:0 for t in teams}
 
+                # Calaculating the batting team score and score difference for each inning
                 for _, row in linescores_df.iterrows():
                     batting_team = row['battingteamid']
                     current_batting_score = team_scores[batting_team]
@@ -143,13 +144,32 @@ def process_linescores(linescore_map, engine):
     if all_linescores_list:
         final_linescores_df = pd.concat(all_linescores_list, ignore_index=True)
         final_linescores_df.columns = [col.lower() for col in final_linescores_df.columns]
-        final_linescores_df.to_sql('linescore', engine, if_exists='append', index=False, chunksize=1000)
+        final_linescores_df.to_sql('linescore', engine, if_exists='replace', index=False, chunksize=1000)
         logger.info(f"Total number of linescore entries processed: {len(final_linescores_df)}")
 
 def process_runners(runners_map, engine):
     logger.info("Processing runners files...")
 
     all_runners_list = []
+    
+    # Helper function to normalize base values
+    def normalize_base(val):
+        if pd.isna(val) or val == '': return 'B'
+        if '1' in str(val): return '1B'
+        if '2' in str(val): return '2B'
+        if '3' in str(val): return '3B'
+        if 'score' in str(val).lower() or 'home' in str(val).lower(): return 'HM'
+        return str(val)
+    
+    # Map to determine the final safe base for an out play, based on the endbase
+    final_safe_base_map = {
+        '1B': 'B',
+        '2B': '1B',
+        '3B': '2B',
+        'HM': '3B',
+        'B': 'B'
+    }
+
     for gamepk, paths in runners_map.items():
         try:
             runners_df = pd.read_csv(paths['runners_csv'])
@@ -158,21 +178,22 @@ def process_runners(runners_map, engine):
 
             runners_df = runners_df[runners_df['gamePk'] == gamepk].copy()
 
-            def normalize_base(val):
-                if pd.isna(val) or val == '': return 'B'
-                if '1' in str(val): return '1B'
-                if '2' in str(val): return '2B'
-                if '3' in str(val): return '3B'
-                if 'score' in str(val).lower() or 'home' in str(val).lower(): return 'HM'
-                return str(val)
-            
-            if 'originBase' in runners_df.columns:
-                runners_df['startbase'] = runners_df['originBase'].apply(normalize_base)
             if 'start' in runners_df.columns:
                 runners_df['startbase'] = runners_df['start'].apply(normalize_base)
-            if 'end' in runners_df.columns:
-                runners_df['endbase'] = runners_df['end'].apply(normalize_base)
-            runners_df['reachedbase'] = runners_df['endbase']
+
+            # Normalize endbase and outbase values
+            runners_df['end_normalized'] = runners_df['end'].apply(normalize_base)
+            runners_df['out_normalized'] = runners_df['outBase'].apply(normalize_base)
+
+            runners_df['is_out_bool'] = runners_df['isOut'].fillna(False).astype(bool) 
+
+            # Determine the endbase for the play, using outBase if it's an out, otherwise using end
+            runners_df['endbase'] = runners_df.apply(lambda row: row['out_normalized'] if row['is_out_bool'] 
+                                                     else row['end_normalized'], axis=1  )
+            
+            # Determine the reached base for the runner, using endbase if not out, otherwise using the final safe base map
+            runners_df['reachedbase'] = runners_df.apply(lambda row: row['endbase'] if not row['is_out_bool']
+                                                         else final_safe_base_map.get(row['endbase'], 'B'), axis=1)
 
             runners_df['is_risp'] = runners_df['startbase'].isin(['2B', '3B'])
             
@@ -181,7 +202,7 @@ def process_runners(runners_map, engine):
             runners_df['is_firsttothird'] = (
                                             (runners_df['startbase'] == '1B')
                                             & (runners_df['endbase'] == '3B')
-                                              & (~is_hr)
+                                              & (~is_hr)    
                                             )
             
             runners_df['is_secondtohome'] = (
@@ -218,13 +239,15 @@ def process_runners(runners_map, engine):
 
     if all_runners_list:
         final_runners_df = pd.concat(all_runners_list, ignore_index=True)
+        # Since duplicate playIds are there for same runner 
+        # Keeping the last entry in case of such duplicates
         final_runners_df.drop_duplicates(
             subset=['gamepk', 'atbatindex', 'playindex', 'runnerid'],
             keep='last', 
             inplace=True
         )
         final_runners_df.columns = [col.lower() for col in final_runners_df.columns]
-        final_runners_df.to_sql('runner_play', engine, if_exists='append', index=False, chunksize=1000)
+        final_runners_df.to_sql('runner_play', engine, if_exists='replace', index=False, chunksize=1000)
         logger.info(f"Total number of runner entries processed: {len(final_runners_df)}")
 
 def main():
@@ -244,6 +267,7 @@ def main():
         logger.error("No valid game CSV locations found. Exiting.")
         return
 
+    # Transform and load data for each table
     process_games(csv_location_map, engine)
     process_linescores(csv_location_map, engine)
     process_runners(csv_location_map, engine)

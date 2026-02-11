@@ -33,14 +33,23 @@ ORDER BY stolen_bases DESC;
 SELECT runnerid, runnerfullname, COUNT (*) as extra_bases_taken
 FROM runner_play
 WHERE (
-        eventtype = 'Single' AND (
-            (startbase = '1B' AND endbase IN ('3B', 'HM')) OR
-            (startbase = '2B' AND endbase = 'HM'))
+        (
+            eventtype = 'Single' AND 
+            (
+                (
+                (startbase = '1B' AND reachedbase IN ('3B', 'HM')) OR
+                (startbase = '2B' AND reachedbase = 'HM')
+                )
+            )
         )
          OR
-         (eventtype = 'Double' AND (
-         (startbase = '1B' AND endbase = 'HM'))
-         )
+         (
+            eventtype = 'Double' AND 
+            (
+                (startbase = '1B' AND reachedbase = 'HM')
+            )
+       )
+)
 GROUP BY runnerid, runnerfullname
 ORDER BY extra_bases_taken DESC
 LIMIT 10;
@@ -102,5 +111,33 @@ GROUP BY team_id, team_name
 ORDER BY come_from_beind_wins DESC
 LIMIT 5;
 
--- 3f.Write a query that identifies the most aggressive baserunners and explain your reasoning
+-- 3f. Write a query that identifies the most aggressive baserunners and explain your reasoning
+
+WITH stats_tables AS(
+    SELECT runnerid, runnerfullname, 
+    SUM (CASE WHEN is_firsttothird OR is_secondtohome THEN 1 ELSE 0 END) as aggressive_runs, 
+    SUM (CASE WHEN movementreason ILIKE '%stolen_base%' AND is_out = FALSE THEN 1 ELSE 0 END) as successful_stolen_bases,
+    SUM (CASE WHEN movementreason ILIKE '%stolen_base%' AND is_out = TRUE THEN 1 ELSE 0 END) as caught_stealing ,
+    SUM (CASE WHEN eventtype = 'Single' AND (
+                (startbase = '1B' AND reachedbase IN ('3B', 'HM')) OR
+                (startbase = '2B' AND reachedbase = 'HM')
+                ) THEN 1 ELSE 0 END) as extra_bases_taken_on_singles,
+    SUM (CASE WHEN eventtype = 'Double' AND (
+                (startbase = '1B' AND reachedbase = 'HM')
+                ) THEN 1 ELSE 0 END) as extra_bases_taken_on_doubles, 
+    COUNT(*) as total_plays
+    FROM runner_play
+    GROUP BY runnerid, runnerfullname
+    HAVING COUNT(*) > 10
+    )
+
+SELECT runnerid, runnerfullname, 
+       ROUND((aggressive_runs::NUMERIC / total_plays), 4) as aggressive_run_percentage, 
+       ROUND(successful_stolen_bases::NUMERIC / NULLIF(successful_stolen_bases + caught_stealing, 0), 4) as stolen_base_success_rate,
+       ROUND((extra_bases_taken_on_singles::NUMERIC / total_plays), 4) as extra_bases_on_singles_percentage,
+       ROUND((extra_bases_taken_on_doubles::NUMERIC / total_plays), 4) as extra_bases_on_doubles_percentage
+FROM stats_tables
+ORDER BY aggressive_run_percentage DESC, stolen_base_success_rate DESC, extra_bases_on_singles_percentage DESC, extra_bases_on_doubles_percentage DESC
+LIMIT 10;
+
 
