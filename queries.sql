@@ -20,7 +20,7 @@ LIMIT 5;
 SELECT r.runnerid, r.runnerfullname, COUNT(*) as stolen_bases
 FROM runner_play r 
 JOIN game g on r.gamepk = g.gamepk
-WHERE r.movementreason LIKE '%stolen_base%'
+WHERE r.movementreason ILIKE '%stolen_base%'
  AND g.gametype = 'R'
  AND r.is_out = FALSE
 GROUP BY r.runnerid, r.runnerfullname
@@ -104,11 +104,11 @@ max_deficits AS(
     GROUP BY l.gamepk, t.team_id, t.team_name
 )
 
-SELECT team_id, team_name, COUNT(*) as come_from_beind_wins
+SELECT team_id, team_name, COUNT(*) as come_from_behind_wins
 FROM max_deficits
 WHERE max_deficit < 0
 GROUP BY team_id, team_name
-ORDER BY come_from_beind_wins DESC
+ORDER BY come_from_behind_wins DESC
 LIMIT 5;
 
 -- 3f. Write a query that identifies the most aggressive baserunners and explain your reasoning

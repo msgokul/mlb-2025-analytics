@@ -7,11 +7,11 @@ This project implements a complete Extraction, Transformation and Loading (ETL) 
 ## Project Structure
 ```
 mlb-2025-analytics/
-|-- MLB_DATA_2025
+|-- MLB_Data_2025           #Provided Data (csv files)
 |-- .env                    #Database configurations
-|-- queries.sql             Part 3: Database Schema Definitions (SQL).
-|-- etl_pipelines.py        Part 2: Main Transform and Load Orchestration Script (Python).
-|-- schema.sql              Part 1: Analytical SQL Queries (SQL).
+|-- queries.sql             Part 3: Analytical SQL Queries (SQL).
+|-- etl_pipeline.py        Part 2: Main Transform and Load Orchestration Script (Python).
+|-- schema.sql              Part 1: Database Schema Definitions (SQL).
 |-- README.md               
 |-- requirements.txt
 |-- .gitignore
@@ -37,11 +37,11 @@ git clone https://github.com/msgokul/mlb-2025-analytics.git
 #### 2. Configure Database connection
 
 After the project is cloned in the local, create an **.env** file in the root directory of the project.
-Within this **.env** file paste your Database connection URL
+Within this **.env** file paste your Database connection URL and save it.
 
 ```bash
 #For Local Postgres
-DATABASE_URL = postgres://<username>:<password>@localhost:5432/<your db>
+DATABASE_URL = postgresql://<username>:<password>@localhost:5432/<your db>
 ```
 
 **Important** : Replace `username` , `password`, `your db` with your respective credentials

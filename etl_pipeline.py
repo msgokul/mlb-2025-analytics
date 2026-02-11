@@ -91,7 +91,7 @@ def process_games(game_map, engine):
     if all_games_list:
         final_games_df = pd.concat(all_games_list, ignore_index=True)
         final_games_df.columns = [col.lower() for col in final_games_df.columns]
-        final_games_df.to_sql('game', engine, if_exists='replace', index=False, chunksize=1000)
+        final_games_df.to_sql('game', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of games processed: {len(final_games_df)}")
 
 
@@ -144,7 +144,7 @@ def process_linescores(linescore_map, engine):
     if all_linescores_list:
         final_linescores_df = pd.concat(all_linescores_list, ignore_index=True)
         final_linescores_df.columns = [col.lower() for col in final_linescores_df.columns]
-        final_linescores_df.to_sql('linescore', engine, if_exists='replace', index=False, chunksize=1000)
+        final_linescores_df.to_sql('linescore', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of linescore entries processed: {len(final_linescores_df)}")
 
 def process_runners(runners_map, engine):
@@ -247,7 +247,7 @@ def process_runners(runners_map, engine):
             inplace=True
         )
         final_runners_df.columns = [col.lower() for col in final_runners_df.columns]
-        final_runners_df.to_sql('runner_play', engine, if_exists='replace', index=False, chunksize=1000)
+        final_runners_df.to_sql('runner_play', engine, if_exists='append', index=False, chunksize=1000)
         logger.info(f"Total number of runner entries processed: {len(final_runners_df)}")
 
 def main():
