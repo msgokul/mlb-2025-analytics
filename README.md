@@ -6,10 +6,10 @@ This project implements a complete Extraction, Transformation and Loading (ETL) 
 
 ## Project Structure
 
-**Part 1 (Table Definitions)** : `schema.sql`
-**Part 2 (Transformation and Load Code)** : `etl_pipeline.py`
-**Part 3 (Analysis Query)** : `queries.py`
-**Part 3 Answers** : Located at the bottom of the README
+**Part 1 (Table Definitions)** : `schema.sql`\
+**Part 2 (Transformation and Load Code)** : `etl_pipeline.py`\
+**Part 3 (Analysis Query)** : `queries.py`\
+**Part 3 Answers** : Located at the bottom of the README\
 
 ```
 mlb-2025-analytics/
