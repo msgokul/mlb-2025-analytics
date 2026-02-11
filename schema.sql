@@ -1,4 +1,4 @@
--- Table Definitions
+-- Part 1: Table Definitions
 
 -- Drop tables if they exist
 DROP TABLE IF EXISTS game;
