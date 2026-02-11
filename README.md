@@ -5,12 +5,18 @@
 This project implements a complete Extraction, Transformation and Loading (ETL) pipeline for Major League Baseball play-by-play data from the 2025 season. The solution transforms raw CSV data, using Pandas in Python, into a normalized PostgreSQL database schema optimized for the advanced baseball analytics.
 
 ## Project Structure
+
+**Part 1 (Table Definitions)** : `schema.sql`
+**Part 2 (Transformation and Load Code)** : `etl_pipeline.py`
+**Part 3 (Analysis Query)** : `queries.py`
+**Part 3 Answers** : Located at the bottom of the README
+
 ```
 mlb-2025-analytics/
 |-- MLB_Data_2025           #Provided Data (csv files)
 |-- .env                    #Database configurations
 |-- queries.sql             Part 3: Analytical SQL Queries (SQL).
-|-- etl_pipeline.py        Part 2: Main Transform and Load Orchestration Script (Python).
+|-- etl_pipeline.py         Part 2: Main Transform and Load Orchestration Script (Python).
 |-- schema.sql              Part 1: Database Schema Definitions (SQL).
 |-- README.md               
 |-- requirements.txt
@@ -59,10 +65,12 @@ pip install -r requirements.txt
 
 #### 1. Initialize DB and create the schema (Part 1)
 
-To create the schema for the tables - **games**, **linescores**, **runner_play** run the **schema.sql** file in the terminal opened in the root directory as follows:
+To create the schema for the tables - **game**, **linescore**, **runner_play** run the **schema.sql** file in the terminal opened in the root directory as follows:
 
 ```bash
 psql -U <user> -d <your db> -f schema.sql
+                OR
+psql postgresql://<username>:<password>@localhost:5432/<your db> -f schema.sql
 ```
 
 **Important** : Replace `user` and `db` with your respective credentials and dbname.
@@ -80,9 +88,11 @@ To get the result of the 6 Analytical queries asked, run the **queries.sql** fil
 
 ```bash
 psql -U <user> -d <your db> -f queries.sql
+                 OR
+psql postgresql://<username>:<password>@localhost:5432/<your db> -f queries.sql
 ```
 
-**Important** : Replace `user` and `db` with your respective credentials and dbname.
+**Important** : Replace `user` , `password`and `db` with your respective credentials and dbname.
 
 
 ## Results of the 6 Analytical Queries. (Part 3)
@@ -151,7 +161,7 @@ psql -U <user> -d <your db> -f queries.sql
 
 **Answer**
 ```
- team_id |       team_name       | come_from_beind_wins
+ team_id |       team_name       | come_from_behind_wins
 ---------+-----------------------+----------------------
      141 | Toronto Blue Jays     |                   63
      119 | Los Angeles Dodgers   |                   61
