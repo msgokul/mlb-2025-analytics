@@ -4,10 +4,8 @@
 
 This project implements a complete Extraction, Transformation and Loading (ETL) pipeline for Major League Baseball play-by-play data from the 2025 season. The solution transforms raw CSV data, using Pandas in Python, into a normalized PostgreSQL database schema optimized for the advanced baseball analytics.
 
----
-
 ## Project Structure
-
+```
 mlb-2025-analytics/
 |-- MLB_DATA_2025
 |-- .env                    #Database configurations
@@ -17,9 +15,8 @@ mlb-2025-analytics/
 |-- README.md               
 |-- requirements.txt
 |-- .gitignore
-
+```
 ## How to run this project:
---- 
 
 ### Prerequisites
 
@@ -27,7 +24,6 @@ mlb-2025-analytics/
 2. PostgreSQL (Local instance or Cloud Instance)
 3. Pip Installer
 
----
 
 ### Setup & Installation
 
@@ -88,14 +84,13 @@ psql -U <user> -d <your db> -f queries.sql
 
 **Important** : Replace `user` and `db` with your respective credentials and dbname.
 
----
 
 ## Results of the 6 Analytical Queries. (Part 3)
 
 ### 3a. Who were the top 5 teams in regular season wins in 2025? (gametype = R)
 
 **Answer**
-
+```
  team_id |         team          | wins
 ---------+-----------------------+------
      158 | Milwaukee Brewers     |   97
@@ -104,11 +99,12 @@ psql -U <user> -d <your db> -f queries.sql
      141 | Toronto Blue Jays     |   94
      119 | Los Angeles Dodgers   |   93
 (5 rows)
+```
 
 ### 3b. Which players had 35 or more stolen bases in the 2025 MLB regular season?
 
 **Answer**
-
+```
  runnerid |  runnerfullname  | stolen_bases
 ----------+------------------+--------------
    676609 | JosΘ Caballero   |           46
@@ -119,11 +115,12 @@ psql -U <user> -d <your db> -f queries.sql
    677951 | Bobby Witt Jr.   |           35
    682829 | Elly De La Cruz  |           35
 (7 rows)
+```
 
 ### 3c. Which 10 players had the most "extra bases taken"? - where a baserunner advanced more than 1 base on a single or more than 2 bases on a double
 
 **Answer**
-
+```
  runnerid |  runnerfullname  | extra_bases_taken
 ----------+------------------+-------------------
    676391 | Ernie Clement    |                14
@@ -137,20 +134,23 @@ psql -U <user> -d <your db> -f queries.sql
    683002 | Gunnar Henderson |                11
    678246 | Miguel Vargas    |                10
 (10 rows)
+```
 
 ### 3d. What team (in what gamepk) had the largest deficit but came back to win in 2025?
 
 **Answer**
+```
 
  gamepk | team_id |    team_name     | max_deficit
 --------+---------+------------------+-------------
  776919 |     115 | Colorado Rockies |          -9
 (1 row)
+```
 
 ### 3e. Which 5 teams had the most come-from-behind wins in all games in 2025?
 
 **Answer**
-
+```
  team_id |       team_name       | come_from_beind_wins
 ---------+-----------------------+----------------------
      141 | Toronto Blue Jays     |                   63
@@ -159,7 +159,7 @@ psql -U <user> -d <your db> -f queries.sql
      143 | Philadelphia Phillies |                   54
      118 | Kansas City Royals    |                   49
 (5 rows)
-
+```
 
 
 
